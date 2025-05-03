@@ -1,0 +1,57 @@
+# ----------------
+# Backend (Node.js)
+# ----------------
+backend/node_modules/
+backend/.env*
+backend/logs/
+backend/dist/ # If using TypeScript
+
+# ----------------
+# Flutter
+# ----------------
+# Build files
+flutter/build/
+flutter/.dart_tool/
+flutter/.flutter-plugins
+flutter/.flutter-plugins-dependencies
+flutter/.metadata # Missing in your version
+flutter/.idea/ # Flutter-specific IDE files
+
+# Android
+flutter/android/app/debug/
+flutter/android/app/profile/
+flutter/android/app/release/
+flutter/android/app/build/
+flutter/android/.gradle/
+
+# iOS
+flutter/ios/Flutter/.last_build_id # Fixed path (was **/ios/...)
+flutter/ios/Pods/
+flutter/ios/.symlinks/
+
+# ----------------
+# General
+# ----------------
+.DS_Store
+*.class
+*.log
+*.pyc
+*.swp
+.atom/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# ----------------
+# IDEs
+# ----------------
+# IntelliJ
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# VS Code (uncomment if needed)
+# .vscode/

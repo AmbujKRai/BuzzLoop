@@ -27,12 +27,11 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         home: Consumer<AuthProvider>(
           builder: (context, authProvider, _) {
-            // Show splash screen while checking authentication
-            if (authProvider.status == AuthStatus.initial) {
+            if (authProvider.status == AuthStatus.initial ||
+                authProvider.status == AuthStatus.authenticating) {
               return const SplashScreen();
             }
-            
-            // Navigate based on authentication status
+
             return authProvider.isAuthenticated
                 ? const HomeScreen()
                 : const LoginScreen();

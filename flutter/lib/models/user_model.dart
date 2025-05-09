@@ -20,23 +20,26 @@ class User {
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
+    List<String>? interestsList;
+    if (json['interests'] != null) {
+      interestsList = List<String>.from(json['interests'].map((x) => x.toString()));
+    }
+
     return User(
-      id: json['_id'],
-      name: json['name'],
-      email: json['email'],
+      id: json['_id'] ?? json['id'] ?? '',
+      name: json['name'] ?? '',
+      email: json['email'] ?? '',
       profileImage: json['profileImage'],
       bio: json['bio'],
       location: json['location'],
-      interests: json['interests'] != null
-          ? List<String>.from(json['interests'])
-          : null,
+      interests: interestsList,
       token: json['token'],
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      '_id': id,
+      'id': id,
       'name': name,
       'email': email,
       'profileImage': profileImage,
@@ -48,6 +51,7 @@ class User {
   }
 
   User copyWith({
+    String? id,
     String? name,
     String? email,
     String? profileImage,
@@ -57,7 +61,7 @@ class User {
     String? token,
   }) {
     return User(
-      id: this.id,
+      id: id ?? this.id,
       name: name ?? this.name,
       email: email ?? this.email,
       profileImage: profileImage ?? this.profileImage,

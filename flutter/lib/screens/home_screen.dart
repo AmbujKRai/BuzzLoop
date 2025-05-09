@@ -41,9 +41,9 @@ class HomeScreen extends StatelessWidget {
                             : null,
                         child: user?.profileImage == null
                             ? Text(
-                                user?.name.substring(0, 1).toUpperCase() ?? 'U',
-                                style: const TextStyle(fontSize: 32),
-                              )
+                          user?.name.substring(0, 1).toUpperCase() ?? 'U',
+                          style: const TextStyle(fontSize: 32),
+                        )
                             : null,
                       ),
                       const SizedBox(height: 8),
@@ -66,7 +66,7 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               const Text(
-                'Your Event Discovery App is ready!',
+                'Discover Events',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -74,13 +74,12 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               const Text(
-                'JWT Authentication has been successfully implemented. You can now build the event discovery and management features of your app.',
+                'Idhar se main app start',
                 style: TextStyle(fontSize: 16),
               ),
               const SizedBox(height: 20),
               ElevatedButton.icon(
                 onPressed: () async {
-                  // Refresh user profile from the server
                   await authProvider.refreshProfile();
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(

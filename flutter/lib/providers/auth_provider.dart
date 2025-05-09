@@ -6,44 +6,57 @@ enum AuthStatus { initial, authenticated, unauthenticated, authenticating, error
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
-
   AuthStatus _status = AuthStatus.initial;
   User? _user;
   String? _errorMessage;
 
-  // Getters
   AuthStatus get status => _status;
-
   User? get user => _user;
-
-  String? get errorMessage => _errorMessage;
-
+  String get errorMessage => _errorMessage ?? '';
   bool get isAuthenticated => _status == AuthStatus.authenticated;
 
-  // Constructor
   AuthProvider() {
-    _checkAuth();
+    _checkAuthStatus();
   }
 
-  // Initialize - check if user is already logged in
-  Future<void> _checkAuth() async {
+  Future<void> _checkAuthStatus() async {
     try {
-      final isValidToken = await _authService.isTokenValid();
+      _status = AuthStatus.authenticating;
+      notifyListeners();
 
-      if (isValidToken) {
-        _user = await _authService.getCurrentUser();
+      final isTokenValid = await _authService.isTokenValid();
+      if (isTokenValid) {
+        _user = await _authService.getUserProfile();
         _status = AuthStatus.authenticated;
       } else {
         _status = AuthStatus.unauthenticated;
       }
     } catch (e) {
       _status = AuthStatus.unauthenticated;
+      _errorMessage = e.toString();
+    } finally {
+      notifyListeners();
     }
-
-    notifyListeners();
   }
 
-  // Register a new user
+  Future<bool> login({required String email, required String password}) async {
+    try {
+      _status = AuthStatus.authenticating;
+      _errorMessage = null;
+      notifyListeners();
+
+      _user = await _authService.login(email: email, password: password);
+      _status = AuthStatus.authenticated;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _status = AuthStatus.error;
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<bool> register({
     required String name,
     required String email,
@@ -59,53 +72,29 @@ class AuthProvider with ChangeNotifier {
         email: email,
         password: password,
       );
-
       _status = AuthStatus.authenticated;
       notifyListeners();
       return true;
     } catch (e) {
       _status = AuthStatus.error;
-      _errorMessage = e.toString();
+      _errorMessage = 'User already exists'.toString();
       notifyListeners();
       return false;
     }
   }
 
-  // Login user
-  Future<bool> login({
-    required String email,
-    required String password,
-  }) async {
-    try {
-      _status = AuthStatus.authenticating;
-      _errorMessage = null;
-      notifyListeners();
-
-      _user = await _authService.login(
-        email: email,
-        password: password,
-      );
-
-      _status = AuthStatus.authenticated;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      _status = AuthStatus.error;
-      _errorMessage = e.toString();
-      notifyListeners();
-      return false;
-    }
-  }
-
-  // Logout user
   Future<void> logout() async {
-    await _authService.logout();
-    _user = null;
-    _status = AuthStatus.unauthenticated;
-    notifyListeners();
+    try {
+      await _authService.logout();
+      _user = null;
+      _status = AuthStatus.unauthenticated;
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = 'Logout Failed'.toString();
+      notifyListeners();
+    }
   }
 
-  // Refresh user profile
   Future<void> refreshProfile() async {
     try {
       if (_status != AuthStatus.authenticated) return;
@@ -113,14 +102,15 @@ class AuthProvider with ChangeNotifier {
       _user = await _authService.getUserProfile();
       notifyListeners();
     } catch (e) {
-      // If getting profile fails due to invalid token, logout
       if (e.toString().contains('Authentication')) {
         await logout();
+      } else {
+        _errorMessage = e.toString();
+        notifyListeners();
       }
     }
   }
 
-  // Update user profile
   Future<bool> updateProfile({
     String? name,
     String? email,
@@ -138,7 +128,6 @@ class AuthProvider with ChangeNotifier {
         interests: interests,
         profileImage: profileImage,
       );
-
       notifyListeners();
       return true;
     } catch (e) {

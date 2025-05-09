@@ -8,7 +8,6 @@ import '../utils/secure_storage.dart';
 class AuthService {
   final SecureStorage _secureStorage = SecureStorage();
 
-  // Register a new user
   Future<User> register({
     required String name,
     required String email,
@@ -28,7 +27,6 @@ class AuthService {
       if (response.statusCode == 201) {
         final userData = User.fromJson(jsonDecode(response.body));
         
-        // Save the token and user data
         await _secureStorage.saveToken(userData.token!);
         await _secureStorage.saveUser(userData);
         
@@ -42,7 +40,6 @@ class AuthService {
     }
   }
 
-  // Login user
   Future<User> login({
     required String email,
     required String password,
@@ -60,7 +57,6 @@ class AuthService {
       if (response.statusCode == 200) {
         final userData = User.fromJson(jsonDecode(response.body));
         
-        // Save the token and user data
         await _secureStorage.saveToken(userData.token!);
         await _secureStorage.saveUser(userData);
         
@@ -74,17 +70,14 @@ class AuthService {
     }
   }
 
-  // Logout user
   Future<void> logout() async {
     await _secureStorage.clearAll();
   }
 
-  // Get current user from storage
   Future<User?> getCurrentUser() async {
     return await _secureStorage.getUser();
   }
 
-  // Check if token is valid (not expired)
   Future<bool> isTokenValid() async {
     final token = await _secureStorage.getToken();
     if (token == null) return false;
@@ -96,7 +89,6 @@ class AuthService {
     }
   }
 
-  // Get user profile
   Future<User> getUserProfile() async {
     try {
       final token = await _secureStorage.getToken();
@@ -117,7 +109,6 @@ class AuthService {
         final userData = User.fromJson(jsonDecode(response.body));
         final currentUser = await _secureStorage.getUser();
         
-        // Update user data with token preserved
         final updatedUser = userData.copyWith(token: currentUser?.token);
         await _secureStorage.saveUser(updatedUser);
         
@@ -131,7 +122,6 @@ class AuthService {
     }
   }
 
-  // Update user profile
   Future<User> updateProfile({
     String? name,
     String? email,

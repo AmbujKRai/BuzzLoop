@@ -18,6 +18,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isObscure = true;
   bool _isConfirmObscure = true;
   bool _isLoading = false;
+  String? _errorMessage;
 
   @override
   void dispose() {
@@ -29,6 +30,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _register() async {
+    setState(() {
+      _errorMessage = null;
+    });
+
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -43,13 +48,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
 
     if (!success && mounted) {
-      // Show error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(authProvider.errorMessage ?? 'Registration failed'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      setState(() {
+        _errorMessage = authProvider.errorMessage;
+      });
     }
 
     if (mounted) {
@@ -94,6 +95,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 32),
+
+                  if (_errorMessage != null) ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.red.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.error_outline, color: Colors.red.shade700),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _errorMessage!,
+                              style: TextStyle(color: Colors.red.shade700),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+
                   TextFormField(
                     controller: _nameController,
                     decoration: const InputDecoration(
@@ -201,9 +227,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: _isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
                         : const Text(
-                            'Sign Up',
-                            style: TextStyle(fontSize: 16),
-                          ),
+                      'Sign Up',
+                      style: TextStyle(fontSize: 16),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Row(

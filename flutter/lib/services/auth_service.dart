@@ -1,36 +1,34 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:jwt_decoder/jwt_decoder.dart';
 import '../constants/api_constants.dart';
 import '../models/user_model.dart';
 import '../utils/secure_storage.dart';
 
 class AuthService {
-  final SecureStorage _secureStorage = SecureStorage();
-
-  Future<User> register({
-    required String name,
+  static Future<User> register({
+    required String username,
     required String email,
     required String password,
+    String? role,
   }) async {
     try {
       final response = await http.post(
-        Uri.parse(ApiConstants.register),
+        Uri.parse('${ApiConstants.baseUrl}${ApiConstants.register}'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'name': name,
+          'username': username,
           'email': email,
           'password': password,
+          if (role != null) 'role': role,
         }),
       );
 
       if (response.statusCode == 201) {
-        final userData = User.fromJson(jsonDecode(response.body));
-        
-        await _secureStorage.saveToken(userData.token!);
-        await _secureStorage.saveUser(userData);
-        
-        return userData;
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        return User.fromJson({
+          ...data['user'],
+          'token': data['token'],
+        });
       } else {
         final errorData = jsonDecode(response.body);
         throw Exception(errorData['message'] ?? 'Registration failed');
@@ -40,13 +38,13 @@ class AuthService {
     }
   }
 
-  Future<User> login({
+  static Future<User> login({
     required String email,
     required String password,
   }) async {
     try {
       final response = await http.post(
-        Uri.parse(ApiConstants.login),
+        Uri.parse('${ApiConstants.baseUrl}${ApiConstants.login}'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': email,
@@ -55,12 +53,11 @@ class AuthService {
       );
 
       if (response.statusCode == 200) {
-        final userData = User.fromJson(jsonDecode(response.body));
-        
-        await _secureStorage.saveToken(userData.token!);
-        await _secureStorage.saveUser(userData);
-        
-        return userData;
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        return User.fromJson({
+          ...data['user'],
+          'token': data['token'],
+        });
       } else {
         final errorData = jsonDecode(response.body);
         throw Exception(errorData['message'] ?? 'Login failed');
@@ -70,35 +67,16 @@ class AuthService {
     }
   }
 
-  Future<void> logout() async {
-    await _secureStorage.clearAll();
-  }
-
-  Future<User?> getCurrentUser() async {
-    return await _secureStorage.getUser();
-  }
-
-  Future<bool> isTokenValid() async {
-    final token = await _secureStorage.getToken();
-    if (token == null) return false;
-    
+  static Future<User> getUserProfile() async {
     try {
-      return !JwtDecoder.isExpired(token);
-    } catch (e) {
-      return false;
-    }
-  }
+      final token = await SecureStorage.read('token');
 
-  Future<User> getUserProfile() async {
-    try {
-      final token = await _secureStorage.getToken();
-      
       if (token == null) {
         throw Exception('Authentication token not found');
       }
-      
+
       final response = await http.get(
-        Uri.parse(ApiConstants.profile),
+        Uri.parse('${ApiConstants.baseUrl}${ApiConstants.profile}'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -106,64 +84,49 @@ class AuthService {
       );
 
       if (response.statusCode == 200) {
-        final userData = User.fromJson(jsonDecode(response.body));
-        final currentUser = await _secureStorage.getUser();
-        
-        final updatedUser = userData.copyWith(token: currentUser?.token);
-        await _secureStorage.saveUser(updatedUser);
-        
-        return updatedUser;
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        return User.fromJson(data);
       } else {
         final errorData = jsonDecode(response.body);
-        throw Exception(errorData['message'] ?? 'Failed to get profile');
+        throw Exception(errorData['message'] ?? 'Failed to get user profile');
       }
     } catch (e) {
-      throw Exception('Failed to get profile: $e');
+      throw Exception('Failed to get user profile: $e');
     }
   }
 
-  Future<User> updateProfile({
-    String? name,
-    String? email,
-    String? bio,
-    String? location,
-    List<String>? interests,
-    String? profileImage,
+  static Future<User> updateUserRole({
+    required String userId,
+    required String role,
   }) async {
     try {
-      final token = await _secureStorage.getToken();
-      
+      final token = await SecureStorage.read('token');
+
       if (token == null) {
         throw Exception('Authentication token not found');
       }
-      
-      final Map<String, dynamic> updateData = {};
-      if (name != null) updateData['name'] = name;
-      if (email != null) updateData['email'] = email;
-      if (bio != null) updateData['bio'] = bio;
-      if (location != null) updateData['location'] = location;
-      if (interests != null) updateData['interests'] = interests;
-      if (profileImage != null) updateData['profileImage'] = profileImage;
-      
+
       final response = await http.put(
-        Uri.parse(ApiConstants.profile),
+        Uri.parse('${ApiConstants.baseUrl}${ApiConstants.updateRole}'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-        body: jsonEncode(updateData),
+        body: jsonEncode({
+          'userId': userId,
+          'role': role,
+        }),
       );
 
       if (response.statusCode == 200) {
-        final updatedUser = User.fromJson(jsonDecode(response.body));
-        await _secureStorage.saveUser(updatedUser);
-        return updatedUser;
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        return User.fromJson(data['user']);
       } else {
         final errorData = jsonDecode(response.body);
-        throw Exception(errorData['message'] ?? 'Failed to update profile');
+        throw Exception(errorData['message'] ?? 'Failed to update user role');
       }
     } catch (e) {
-      throw Exception('Failed to update profile: $e');
+      throw Exception('Failed to update user role: $e');
     }
   }
 }

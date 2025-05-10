@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
-import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({Key? key}) : super(key: key);
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -14,9 +13,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _isObscure = true;
-  bool _isLoading = false;
-  String? _errorMessage;
+  bool _isPasswordVisible = false;
 
   @override
   void dispose() {
@@ -26,127 +23,94 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _login() async {
-    setState(() {
-      _errorMessage = null;
-    });
+    if (_formKey.currentState!.validate()) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-    if (!_formKey.currentState!.validate()) return;
+      final success = await authProvider.login(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
 
-    setState(() {
-      _isLoading = true;
-    });
-
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final success = await authProvider.login(
-      email: _emailController.text.trim(),
-      password: _passwordController.text.trim(),
-    );
-
-    if (!success && mounted) {
-      setState(() {
-        _errorMessage = authProvider.errorMessage;
-      });
-    }
-
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
+      if (success && mounted) {
+        Navigator.of(context).pushReplacementNamed('/');
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
+      appBar: AppBar(
+        title: const Text('Login'),
+      ),
+      body: Consumer<AuthProvider>(
+        builder: (context, authProvider, _) {
+          if (authProvider.isAuthenticated) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              Navigator.of(context).pushReplacementNamed('/');
+            });
+          }
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
             child: Form(
               key: _formKey,
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  const SizedBox(height: 20),
+                  const Icon(
+                    Icons.event,
+                    size: 80,
+                    color: Colors.blue,
+                  ),
+                  const SizedBox(height: 10),
                   const Text(
-                    'Welcome Back',
+                    'Event Discovery',
+                    textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 28,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Sign in to continue to Event Discovery',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey,
-                    ),
-                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 40),
-
-                  if (_errorMessage != null) ...[
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.red.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.red.shade200),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.error_outline, color: Colors.red.shade700),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              _errorMessage!,
-                              style: TextStyle(color: Colors.red.shade700),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                  ],
 
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     decoration: const InputDecoration(
                       labelText: 'Email',
-                      prefixIcon: Icon(Icons.email_outlined),
                       border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.email),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter your email';
                       }
-                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                          .hasMatch(value)) {
-                        return 'Please enter a valid email address';
+                      if (!value.contains('@')) {
+                        return 'Please enter a valid email';
                       }
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
+
                   TextFormField(
                     controller: _passwordController,
-                    obscureText: _isObscure,
+                    obscureText: !_isPasswordVisible,
                     decoration: InputDecoration(
                       labelText: 'Password',
-                      prefixIcon: const Icon(Icons.lock_outlined),
                       border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.lock),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _isObscure
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
+                          _isPasswordVisible
+                              ? Icons.visibility_off
+                              : Icons.visibility,
                         ),
                         onPressed: () {
                           setState(() {
-                            _isObscure = !_isObscure;
+                            _isPasswordVisible = !_isPasswordVisible;
                           });
                         },
                       ),
@@ -159,43 +123,52 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                   ),
                   const SizedBox(height: 24),
+
                   ElevatedButton(
-                    onPressed: _isLoading ? null : _login,
+                    onPressed: authProvider.isLoading ? null : _login,
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: Theme.of(context).primaryColor,
-                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    child: _isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
+                    child: authProvider.isLoading
+                        ? const CircularProgressIndicator()
                         : const Text(
-                      'Sign In',
+                      'LOGIN',
                       style: TextStyle(fontSize: 16),
                     ),
                   ),
+
+                  if (authProvider.error != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: Text(
+                        authProvider.error!,
+                        style: const TextStyle(
+                          color: Colors.red,
+                          fontSize: 14,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+
                   const SizedBox(height: 16),
+
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Text("Don't have an account?"),
                       TextButton(
                         onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const RegisterScreen(),
-                            ),
-                          );
+                          Navigator.of(context).pushReplacementNamed('/register');
                         },
-                        child: const Text('Sign Up'),
+                        child: const Text('Register'),
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

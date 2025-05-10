@@ -1,74 +1,61 @@
 class User {
   final String id;
-  final String name;
+  final String username;
   final String email;
-  final String? profileImage;
-  final String? bio;
-  final String? location;
-  final List<String>? interests;
+  final String role;
   final String? token;
+  final Map<String, dynamic>? profile;
 
   User({
     required this.id,
-    required this.name,
+    required this.username,
     required this.email,
-    this.profileImage,
-    this.bio,
-    this.location,
-    this.interests,
+    required this.role,
     this.token,
+    this.profile,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
-    List<String>? interestsList;
-    if (json['interests'] != null) {
-      interestsList = List<String>.from(json['interests'].map((x) => x.toString()));
-    }
-
     return User(
-      id: json['_id'] ?? json['id'] ?? '',
-      name: json['name'] ?? '',
+      id: json['id'] ?? json['_id'] ?? '',
+      username: json['username'] ?? '',
       email: json['email'] ?? '',
-      profileImage: json['profileImage'],
-      bio: json['bio'],
-      location: json['location'],
-      interests: interestsList,
+      role: json['role'] ?? 'user',
       token: json['token'],
+      profile: json['profile'],
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'name': name,
+      'username': username,
       'email': email,
-      'profileImage': profileImage,
-      'bio': bio,
-      'location': location,
-      'interests': interests,
+      'role': role,
       'token': token,
+      'profile': profile,
     };
   }
 
   User copyWith({
     String? id,
-    String? name,
+    String? username,
     String? email,
-    String? profileImage,
-    String? bio,
-    String? location,
-    List<String>? interests,
+    String? role,
     String? token,
+    Map<String, dynamic>? profile,
   }) {
     return User(
       id: id ?? this.id,
-      name: name ?? this.name,
+      username: username ?? this.username,
       email: email ?? this.email,
-      profileImage: profileImage ?? this.profileImage,
-      bio: bio ?? this.bio,
-      location: location ?? this.location,
-      interests: interests ?? this.interests,
+      role: role ?? this.role,
       token: token ?? this.token,
+      profile: profile ?? this.profile,
     );
   }
+
+  bool get isAdmin => role == 'admin';
+  bool get isOrganizer => role == 'organizer' || role == 'admin';
+  bool get isUser => role == 'user' || role == 'organizer' || role == 'admin';
 }

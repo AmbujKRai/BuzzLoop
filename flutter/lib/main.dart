@@ -2,14 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
 import 'screens/auth/login_screen.dart';
+import 'screens/auth/register_screen.dart';
 import 'screens/home_screen.dart';
+import 'utils/route_guard.dart';
+import 'screens/splash_screen.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -17,52 +21,79 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
       ],
-      child: MaterialApp(
-        title: 'Event Discovery App',
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-          fontFamily: 'Poppins',
-          useMaterial3: true,
-        ),
-        debugShowCheckedModeBanner: false,
-        home: Consumer<AuthProvider>(
-          builder: (context, authProvider, _) {
-            if (authProvider.status == AuthStatus.initial ||
-                authProvider.status == AuthStatus.authenticating) {
-              return const SplashScreen();
-            }
-
-            return authProvider.isAuthenticated
-                ? const HomeScreen()
-                : const LoginScreen();
-          },
-        ),
-      ),
-    );
-  }
-}
-
-class SplashScreen extends StatelessWidget {
-  const SplashScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Event Discovery',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+      child: Consumer<AuthProvider>(
+        builder: (context, authProvider, _) {
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            title: 'Event Discovery App',
+            theme: ThemeData(
+              primarySwatch: Colors.blue,
+              visualDensity: VisualDensity.adaptivePlatformDensity,
             ),
-            SizedBox(height: 20),
-            CircularProgressIndicator(),
-          ],
-        ),
+            home: const SplashScreen(),
+            routes: {
+              '/login': (context) => const LoginScreen(),
+              '/register': (context) => const RegisterScreen(),
+              '/home': (context) => const HomeScreen(),
+            },
+            onGenerateRoute: (settings) {
+              switch (settings.name) {
+                case '/profile':
+                  return MaterialPageRoute(
+                    builder: (context) => AuthGuard(
+                      child: const Text('Profile Screen'),
+                    ),
+                  );
+
+                case '/events/registered':
+                  return MaterialPageRoute(
+                    builder: (context) => AuthGuard(
+                      child: const Text('My Registrations'),
+                    ),
+                  );
+
+                case '/events/create':
+                  return MaterialPageRoute(
+                    builder: (context) => RoleGuard(
+                      allowedRoles: ['organizer', 'admin'],
+                      child: const Text('Create Event'),
+                    ),
+                  );
+
+                case '/events/manage':
+                  return MaterialPageRoute(
+                    builder: (context) => RoleGuard(
+                      allowedRoles: ['organizer', 'admin'],
+                      child: const Text('Manage Events'),
+                    ),
+                  );
+
+                case '/admin':
+                  return MaterialPageRoute(
+                    builder: (context) => RoleGuard(
+                      allowedRoles: ['admin'],
+                      child: const Text('Admin Dashboard'),
+                    ),
+                  );
+
+                case '/admin/users':
+                  return MaterialPageRoute(
+                    builder: (context) => RoleGuard(
+                      allowedRoles: ['admin'],
+                      child: const Text('Manage Users'),
+                    ),
+                  );
+
+                default:
+                  return MaterialPageRoute(
+                    builder: (_) => const Scaffold(
+                      body: Center(child: Text('Page not found')),
+                    ),
+                  );
+              }
+            },
+          );
+        },
       ),
     );
   }

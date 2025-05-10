@@ -4,28 +4,40 @@ import '../constants/api_constants.dart';
 import '../models/user_model.dart';
 
 class SecureStorage {
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  static final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
-  Future<void> saveToken(String token) async {
+  static Future<void> write(String key, String value) async {
+    await _storage.write(key: key, value: value);
+  }
+
+  static Future<String?> read(String key) async {
+    return await _storage.read(key: key);
+  }
+
+  static Future<void> delete(String key) async {
+    await _storage.delete(key: key);
+  }
+
+  static Future<void> saveToken(String token) async {
     await _storage.write(key: ApiConstants.tokenKey, value: token);
   }
 
-  Future<String?> getToken() async {
+  static Future<String?> getToken() async {
     return await _storage.read(key: ApiConstants.tokenKey);
   }
 
-  Future<void> deleteToken() async {
+  static Future<void> deleteToken() async {
     await _storage.delete(key: ApiConstants.tokenKey);
   }
 
-  Future<void> saveUser(User user) async {
+  static Future<void> saveUser(User user) async {
     await _storage.write(
       key: ApiConstants.userKey,
       value: jsonEncode(user.toJson()),
     );
   }
 
-  Future<User?> getUser() async {
+  static Future<User?> getUser() async {
     final userData = await _storage.read(key: ApiConstants.userKey);
     if (userData != null) {
       return User.fromJson(jsonDecode(userData));
@@ -33,15 +45,15 @@ class SecureStorage {
     return null;
   }
 
-  Future<void> deleteUser() async {
+  static Future<void> deleteUser() async {
     await _storage.delete(key: ApiConstants.userKey);
   }
 
-  Future<void> clearAll() async {
+  static Future<void> clearAll() async {
     await _storage.deleteAll();
   }
 
-  Future<bool> isLoggedIn() async {
+  static Future<bool> isLoggedIn() async {
     final token = await getToken();
     return token != null;
   }

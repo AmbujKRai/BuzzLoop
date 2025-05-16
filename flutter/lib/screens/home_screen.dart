@@ -2,9 +2,32 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../utils/role_based_widget.dart';
+import '../services/event_service.dart';
+import '../models/event_model.dart';
+import 'package:intl/intl.dart';
+import 'events/create_event_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  late Future<List<Event>> _eventsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _eventsFuture = EventService.getAllEvents();
+  }
+
+  void _refreshEvents() {
+    setState(() {
+      _eventsFuture = EventService.getAllEvents();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +49,6 @@ class HomeScreen extends StatelessWidget {
               },
             ),
           ),
-
           IconButton(
             icon: const Icon(Icons.person),
             tooltip: 'Profile',
@@ -34,7 +56,6 @@ class HomeScreen extends StatelessWidget {
               Navigator.of(context).pushNamed('/profile');
             },
           ),
-
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Logout',
@@ -46,23 +67,27 @@ class HomeScreen extends StatelessWidget {
           ),
         ],
       ),
-
       floatingActionButton: RoleBasedWidget(
         allowedRoles: ['organizer', 'admin'],
         showReplacement: false,
         child: FloatingActionButton(
           child: const Icon(Icons.add),
           tooltip: 'Create Event',
-          onPressed: () {
-            Navigator.of(context).pushNamed('/events/create');
+          onPressed: () async {
+            final result = await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const CreateEventScreen()),
+            );
+            if (result == true) {
+              _refreshEvents();
+            }
           },
         ),
       ),
-
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      body: RefreshIndicator(
+        onRefresh: () async => _refreshEvents(),
+        child: ListView(
+          padding: const EdgeInsets.all(16.0),
           children: [
             Card(
               elevation: 4,
@@ -84,76 +109,77 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-
+            const SizedBox(height: 24),
             Text(
-              'Discover Events',
+              'Upcoming Events',
               style: Theme.of(context).textTheme.headlineSmall,
             ),
-            const SizedBox(height: 8),
-
-            _buildRoleSpecificActions(context),
-
             const SizedBox(height: 16),
+            FutureBuilder<List<Event>>(
+              future: _eventsFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-            Expanded(
-              child: Center(
-                child: Text(
-                  'Events will be displayed here',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-              ),
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text('Error: ${snapshot.error}'),
+                  );
+                }
+
+                final events = snapshot.data ?? [];
+                if (events.isEmpty) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Text('No events found'),
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: events.length,
+                  itemBuilder: (context, index) {
+                    final event = events[index];
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 8.0),
+                      child: ListTile(
+                        title: Text(
+                          event.title,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 4),
+                            Text('📍 ${event.location}'),
+                            Text(
+                              '📅 ${DateFormat('MMM dd, yyyy').format(event.date)}',
+                            ),
+                            Text('👤 Organized by ${event.organizer}'),
+                          ],
+                        ),
+                        trailing: Chip(
+                          label: Text(
+                            event.category.toUpperCase(),
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                        onTap: () {
+                          // TODO: Navigate to event details
+                        },
+                      ),
+                    );
+                  },
+                );
+              },
             ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildRoleSpecificActions(BuildContext context) {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, _) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (authProvider.isAuthenticated)
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.event),
-                  title: const Text('My Registered Events'),
-                  trailing: const Icon(Icons.arrow_forward_ios),
-                  onTap: () {
-                    Navigator.of(context).pushNamed('/events/registered');
-                  },
-                ),
-              ),
-
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.event_available),
-                title: const Text('Manage My Events'),
-                trailing: const Icon(Icons.arrow_forward_ios),
-                onTap: () {
-                  Navigator.of(context).pushNamed('/events/manage');
-                },
-              ),
-            ).organizerOnly(context,
-              unauthorizedChild: const SizedBox.shrink(),
-            ),
-
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.people_alt),
-                title: const Text('Manage Users'),
-                trailing: const Icon(Icons.arrow_forward_ios),
-                onTap: () {
-                  Navigator.of(context).pushNamed('/admin/users');
-                },
-              ),
-            ).adminOnly(context),
-          ],
-        );
-      },
     );
   }
 }

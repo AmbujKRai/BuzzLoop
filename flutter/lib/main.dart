@@ -4,8 +4,10 @@ import 'providers/auth_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/events/event_list_screen.dart';
 import 'utils/route_guard.dart';
 import 'screens/splash_screen.dart';
+import 'screens/events/create_event_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,6 +37,7 @@ class MyApp extends StatelessWidget {
               '/login': (context) => const LoginScreen(),
               '/register': (context) => const RegisterScreen(),
               '/home': (context) => const HomeScreen(),
+              '/events': (context) => const EventListScreen(),
             },
             onGenerateRoute: (settings) {
               switch (settings.name) {
@@ -45,42 +48,11 @@ class MyApp extends StatelessWidget {
                     ),
                   );
 
-                case '/events/registered':
-                  return MaterialPageRoute(
-                    builder: (context) => AuthGuard(
-                      child: const Text('My Registrations'),
-                    ),
-                  );
-
                 case '/events/create':
                   return MaterialPageRoute(
                     builder: (context) => RoleGuard(
                       allowedRoles: ['organizer', 'admin'],
-                      child: const Text('Create Event'),
-                    ),
-                  );
-
-                case '/events/manage':
-                  return MaterialPageRoute(
-                    builder: (context) => RoleGuard(
-                      allowedRoles: ['organizer', 'admin'],
-                      child: const Text('Manage Events'),
-                    ),
-                  );
-
-                case '/admin':
-                  return MaterialPageRoute(
-                    builder: (context) => RoleGuard(
-                      allowedRoles: ['admin'],
-                      child: const Text('Admin Dashboard'),
-                    ),
-                  );
-
-                case '/admin/users':
-                  return MaterialPageRoute(
-                    builder: (context) => RoleGuard(
-                      allowedRoles: ['admin'],
-                      child: const Text('Manage Users'),
+                      child: const CreateEventScreen(),
                     ),
                   );
 

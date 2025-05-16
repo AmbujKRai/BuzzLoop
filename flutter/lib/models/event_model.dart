@@ -32,9 +32,14 @@ class Event {
       description: json['description'] ?? '',
       location: json['location'] ?? '',
       date: DateTime.parse(json['date']),
-      organizer: json['organizer']['username'] ?? '',
+      organizer: json['organizer'] is Map ? json['organizer']['username'] : (json['organizer'] ?? ''),
       maxParticipants: json['maxParticipants'],
-      participants: List<String>.from(json['participants']?.map((p) => p['username']) ?? []),
+      participants: (json['participants'] as List?)?.map((p) {
+        if (p is Map) {
+          return p['username']?.toString() ?? '';
+        }
+        return p.toString();
+      }).toList() ?? [],
       category: json['category'] ?? 'other',
       status: json['status'] ?? 'upcoming',
       createdAt: DateTime.parse(json['createdAt']),

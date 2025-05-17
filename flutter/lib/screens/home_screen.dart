@@ -6,6 +6,9 @@ import '../services/event_service.dart';
 import '../models/event_model.dart';
 import 'package:intl/intl.dart';
 import 'events/create_event_screen.dart';
+import 'events/event_details_modal.dart';
+import 'admin/admin_screen.dart';
+import 'profile/profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -45,7 +48,12 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: const Icon(Icons.admin_panel_settings),
               tooltip: 'Admin Panel',
               onPressed: () {
-                Navigator.of(context).pushNamed('/admin');
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AdminScreen(),
+                  ),
+                );
               },
             ),
           ),
@@ -53,7 +61,12 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.person),
             tooltip: 'Profile',
             onPressed: () {
-              Navigator.of(context).pushNamed('/profile');
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ProfileScreen(),
+                ),
+              );
             },
           ),
           IconButton(
@@ -169,7 +182,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         onTap: () {
-                          // TODO: Navigate to event details
+                          showDialog(
+                            context: context,
+                            builder: (context) => EventDetailsModal(event: event),
+                          );
                         },
                       ),
                     );
